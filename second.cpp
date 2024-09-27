@@ -2,55 +2,60 @@
 #include <fstream>
 #include <iostream>
 
-class Dice {
+struct AbstractDice {
+    virtual ~AbstractDice() {}
+    virtual unsigned roll() = 0;
+};
+
+class Dice : public AbstractDice {
 public:
     Dice(unsigned max, unsigned seed):
         max(max), dstr(1, max), reng(seed) {}
-    virtual unsigned roll() {
+    unsigned roll() {
         return dstr(reng);
     }
-private: 
+private:
     unsigned max;
     std::uniform_int_distribution<unsigned> dstr;
     std::default_random_engine reng;
 };
 
-class PenaltyDice : public Dice {
+class PenaltyDice : public AbstractDice {
 public:
-    PenaltyDice(unsigned max, 
-        unsigned seed):
-        Dice(max, seed) {}
+    PenaltyDice(AbstractDice &dice) :
+        dice(dice) {}
     unsigned roll() {
-        auto first = Dice::roll(), second = Dice::roll();
-        return first >= second ? first : second;
-    }
-};
-
-class BonusDice : public Dice {
-public:
-    BonusDice(unsigned max, 
-        unsigned seed):
-        Dice(max, seed) {}
-    unsigned roll() {
-        auto first = Dice::roll(), second = Dice::roll();
+        auto first = dice.roll(), second = dice.roll();
         return first <= second ? first : second;
     }
 private:
-    std::uniform_int_distribution<unsigned> dstr_2;
-    std::default_random_engine reng_2;
+    AbstractDice &dice;
 };
 
-class ThreeDicePool : public Dice {
+class BonusDice : public AbstractDice {
 public:
-    ThreeDicePool(unsigned max,
-        unsigned seed):
-        Dice(max, seed) {}
+    BonusDice(AbstractDice &dice) :
+        dice(dice) {}
     unsigned roll() {
-        return Dice::roll() + Dice::roll() + Dice::roll(); 
+        auto first = dice.roll(), second = dice.roll();
+        return first >= second ? first : second;
     }
+private:
+    AbstractDice &dice;
 };
 
-double value_probabilty(Dice &d, unsigned value, unsigned number_of_rolls = 1) {
+class ThreeDicePool : public AbstractDice {
+public:
+    ThreeDicePool(AbstractDice &dice_1, AbstractDice &dice_2, AbstractDice &dice_3) :
+        dice_1(dice_1), dice_2(dice_2), dice_3(dice_3) {}
+    unsigned roll() {
+        return dice_1.roll() + dice_2.roll() + dice_3.roll();
+    }
+private:
+    AbstractDice &dice_1, &dice_2, &dice_3;
+};
+
+double value_probabilty(AbstractDice &d, unsigned value, unsigned number_of_rolls = 1) {
     unsigned accum = 0;
     for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt) {
         if (d.roll() == value) accum += 1;
@@ -58,22 +63,35 @@ double value_probabilty(Dice &d, unsigned value, unsigned number_of_rolls = 1) {
     return static_cast<double>(accum) / number_of_rolls;
 }
 
+double expected_value(AbstractDice &d, unsigned number_of_rolls = 1) {
+    auto accum = 0llu;
+    for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt)
+        accum += d.roll();
+    return static_cast<double>(accum) / static_cast<double>(number_of_rolls);
+}
+
 int main() {
 
     int max = 100, three_max = 6, number_of_rolls = 100000;
 
-    Dice standart(max, 132);
-    ThreeDicePool three(three_max, 13234);
+    Dice alpha(max, 12414);
+    Dice beta(max, 12423414);
+    Dice gamma(max, 122414);
 
-    PenaltyDice penalty(max, 123); 
-    BonusDice bonus(max, 1231);
+    ThreeDicePool three(alpha, beta, gamma);
 
+    PenaltyDice penalty(alpha); 
+    BonusDice bonus(alpha);
+
+    std::cout << expected_value(alpha, number_of_rolls) << " ";
+    std::cout << expected_value(penalty, number_of_rolls) << " ";
+    std::cout << expected_value(bonus, number_of_rolls) << std::endl;
     std::ofstream data("second.csv");
 
     data << "Target\tStandart\tThree\tPenalty\tBonus" << std::endl;
 
     for (int target = 1; target < max; target++) {
-        data << target << "\t" << value_probabilty(standart, target, number_of_rolls) << "\t";
+        data << target << "\t" << value_probabilty(alpha, target, number_of_rolls) << "\t";
         data << value_probabilty(three, target, number_of_rolls) << "\t";
         data << value_probabilty(penalty, target, number_of_rolls) << "\t";
         data << value_probabilty(bonus, target, number_of_rolls);

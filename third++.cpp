@@ -44,13 +44,16 @@ private:
     AbstractDice &dice;
 };
 
-class DoubleDice : private PenaltyDice, private BonusDice, virtual public AbstractDice {
+class DoubleDice : virtual public AbstractDice {
 public:
     DoubleDice(AbstractDice& dice) : 
-        PenaltyDice(dice), BonusDice(dice) {}
+        penalty(dice), bonus(dice) {}
     unsigned roll() {
-        return (PenaltyDice::roll() + BonusDice::roll()) / 2;  
+        return (penalty.roll() + bonus.roll()) / 2;  
     }
+private:
+    PenaltyDice penalty;
+    BonusDice bonus;
 };
 
 double expected_value(AbstractDice &d, unsigned number_of_rolls = 1) {

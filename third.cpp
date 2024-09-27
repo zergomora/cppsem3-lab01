@@ -2,63 +2,65 @@
 #include <fstream>
 #include <iostream>
 
-class Dice {
+struct AbstractDice {
+    virtual ~AbstractDice() {}
+    virtual unsigned roll() = 0;
+};
+
+class Dice : public AbstractDice {
 public:
     Dice(unsigned max, unsigned seed):
-        max(max), seed(seed), dstr(1, max), reng(seed) {}
-    virtual unsigned roll() {
+        max(max), dstr(1, max), reng(seed) {}
+    unsigned roll() {
         return dstr(reng);
     }
-    unsigned max, seed;
-protected:
+private:
+    unsigned max;
     std::uniform_int_distribution<unsigned> dstr;
     std::default_random_engine reng;
 };
 
-class PenaltyDice : virtual public Dice {
+class PenaltyDice : virtual public AbstractDice {
 public:
-    PenaltyDice(unsigned max, 
-        unsigned seed):
-        Dice(max, seed) {}
+    PenaltyDice(AbstractDice &dice) :
+        dice(dice) {}
     unsigned roll() {
-        auto first = Dice::roll(), second = Dice::roll();
-        return first >= second ? first : second;
-    }
-};
-
-class BonusDice : virtual public Dice {
-public:
-    BonusDice(unsigned max, 
-        unsigned seed):
-        Dice(max, seed) {}
-    unsigned roll() {
-        auto first = Dice::roll(), second = Dice::roll();
+        auto first = dice.roll(), second = dice.roll();
         return first <= second ? first : second;
     }
 private:
-    std::uniform_int_distribution<unsigned> dstr_2;
-    std::default_random_engine reng_2;
+    AbstractDice &dice;
+};
+
+class BonusDice : virtual public AbstractDice {
+public:
+    BonusDice(AbstractDice &dice) :
+        dice(dice) {}
+    unsigned roll() {
+        auto first = dice.roll(), second = dice.roll();
+        return first >= second ? first : second;
+    }
+private:
+    AbstractDice &dice;
 };
 
 class DoubleDice : public PenaltyDice, public BonusDice {
 public:
-    DoubleDice(Dice& dice) : 
-        PenaltyDice(dice.max, dice.seed), 
-        BonusDice(dice.max, dice.seed),
-        Dice(dice.max, dice.seed) {}
+    DoubleDice(AbstractDice& dice) : 
+        PenaltyDice(dice), BonusDice(dice) {}
     unsigned roll() {
         return (PenaltyDice::roll() + BonusDice::roll()) / 2;  
     }
 };
 
-double expected_value(Dice &d, unsigned number_of_rolls = 1) {
+double expected_value(AbstractDice &d, unsigned number_of_rolls = 1) {
     auto accum = 0llu;
     for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt)
         accum += d.roll();
     return static_cast<double>(accum) / static_cast<double>(number_of_rolls);
 }
 
-double value_probabilty(Dice &d, unsigned value, unsigned number_of_rolls = 1) {
+double value_probabilty(AbstractDice &d, unsigned value, unsigned number_of_rolls = 1) {
     unsigned accum = 0;
     for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt) {
         if (d.roll() == value) accum += 1;

@@ -1,0 +1,3 @@
+third.cpp - нужны типовые метки обоих BonusDice и PenaltyDice + доступ к protected
+third(without) - только доступ к protected
+third++ - просто композиция

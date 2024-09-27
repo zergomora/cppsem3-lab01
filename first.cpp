@@ -1,11 +1,16 @@
 #include <random>
 #include <iostream>
 
-class Dice {
+struct AbstractDice {
+    virtual ~AbstractDice() {}
+    virtual unsigned roll() = 0;
+};
+
+class Dice : public AbstractDice {
 public:
     Dice(unsigned max, unsigned seed):
         max(max), dstr(1, max), reng(seed) {}
-    virtual unsigned roll() {
+    unsigned roll() {
         return dstr(reng);
     }
 private:
@@ -14,17 +19,18 @@ private:
     std::default_random_engine reng;
 };
 
-class ThreeDicePool : public Dice {
+class ThreeDicePool : public AbstractDice {
 public:
-    ThreeDicePool(unsigned max,
-        unsigned seed):
-        Dice(max, seed) {}
+    ThreeDicePool(AbstractDice &dice_1, AbstractDice &dice_2, AbstractDice &dice_3) :
+        dice_1(dice_1), dice_2(dice_2), dice_3(dice_3) {}
     unsigned roll() {
-        return Dice::roll() + Dice::roll() + Dice::roll(); 
+        return dice_1.roll() + dice_2.roll() + dice_3.roll();
     }
+private:
+    AbstractDice &dice_1, &dice_2, &dice_3;
 };
 
-double expected_value(Dice &d, unsigned number_of_rolls = 1) {
+double expected_value(AbstractDice &d, unsigned number_of_rolls = 1) {
     auto accum = 0llu;
     for (unsigned cnt = 0; cnt != number_of_rolls; ++cnt)
         accum += d.roll();
@@ -35,14 +41,17 @@ int main() {
 
     int max = 6, attemps = 10000;
 
-    Dice one(max, 12414);
-    ThreeDicePool three(max, 1231323);
+    Dice alpha(max, 12414);
+    Dice beta(max, 12423414);
+    Dice gamma(max, 122414);
 
-    std::cout << "Dice roll: " << one.roll() << std::endl;
+    ThreeDicePool three(alpha, beta, gamma);
+
+    std::cout << "Dice roll: " << alpha.roll() << std::endl;
     std::cout << "Three dice rolls: " << three.roll() << std::endl;
 
-    std::cout << "Expected value for Dice: " << expected_value(one, attemps) << std::endl;
+    std::cout << "Expected value for Dice: " << expected_value(alpha, attemps) << std::endl;
     std::cout << "Expected value for ThreeDicePool: " << expected_value(three, attemps) << std::endl;
-    
+
     return 0;
 }
