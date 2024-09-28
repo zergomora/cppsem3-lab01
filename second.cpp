@@ -75,10 +75,11 @@ int main() {
     int max = 100, three_max = 6, number_of_rolls = 100000;
 
     Dice alpha(max, 12414);
-    Dice beta(max, 12423414);
-    Dice gamma(max, 122414);
+    Dice beta(three_max, 12423414);
+    Dice gamma(three_max, 122414);
+    Dice theta(three_max, 213123);
 
-    ThreeDicePool three(alpha, beta, gamma);
+    ThreeDicePool three(beta, gamma, theta);
 
     PenaltyDice penalty(alpha); 
     BonusDice bonus(alpha);
