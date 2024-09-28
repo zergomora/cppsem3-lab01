@@ -72,7 +72,7 @@ double expected_value(AbstractDice &d, unsigned number_of_rolls = 1) {
 
 int main() {
 
-    int max = 100, three_max = 6, number_of_rolls = 100000;
+    int max = 100, three_max = 6, number_of_rolls = 1000000;
 
     Dice alpha(max, 12414);
     Dice beta(three_max, 12423414);

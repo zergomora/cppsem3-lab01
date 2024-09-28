@@ -70,7 +70,7 @@ double value_probabilty(AbstractDice &d, unsigned value, unsigned number_of_roll
 
 int main() {
 
-    int max = 100, number_of_rolls = 1000;
+    int max = 100, number_of_rolls = 1000000;
 
     Dice base(max, 1123);
     DoubleDice child(base);
